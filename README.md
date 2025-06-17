@@ -13,7 +13,7 @@
    将本仓库克隆到您的 Unity 项目的 `Assets` 目录下：
 
    ```bash
-   git clone https://github.com/Pixelsmao/UnityCommonSolution-SimpleDataPersistence.git
+   git clone https://github.com/Pixelsmao/UnityCommonSolution-ScriptPersistence.git
    ```
 
 2. **使用UPM进行安装：**
@@ -28,11 +28,11 @@
    在弹出的输入框中，粘贴本仓库的 Git URL：
 
    ```
-   https://github.com/Pixelsmao/UnityCommonSolution-SimpleDataPersistence.git
+   https://github.com/Pixelsmao/UnityCommonSolution-ScriptPersistence.git
    ```
 
    然后点击 **Add**。
 
 ## 使用方法
 
-1.使用`PersistenceScript`属性标记脚本
+1.使用`PersistenceScript`属性标记脚本，然后运行程序，会在程序目录中生成`Applocation.ini`配置文件。
