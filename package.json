@@ -1,7 +1,7 @@
 {
-  "name": "com.pixelsmao.unitycommonsolution.simpledatapersistence",
+  "name": "com.pixelsmao.unitycommonsolution.scriptpersistence",
   "version": "1.0.0",
-  "displayName": "Pixelsmao.UnityCommonSolution.SimpleDataPersistence",
+  "displayName": "Pixelsmao.UnityCommonSolution.ScriptPersistence",
   "description": "在Unity中通过反射的方法对场景中的脚本进行数据持久化，保存和加载脚本中的可序列化成员。",
   "unity": "2021.3",
   "author": {
@@ -16,7 +16,7 @@
   "documentation": {},
   "repository": {
     "type": "git",
-    "url": "https://github.com/Pixelsmao/UnityCommonSolution-SimpleDataPersistence.git"
+    "url": "https://github.com/Pixelsmao/UnityCommonSolution-ScriptPersistence.git"
   },
   "dependencies": {}
 }
