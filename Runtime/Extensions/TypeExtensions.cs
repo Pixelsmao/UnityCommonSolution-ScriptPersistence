@@ -1,7 +1,7 @@
 using System;
 using System.Linq.Expressions;
 
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     public static class TypeExtensions
     {

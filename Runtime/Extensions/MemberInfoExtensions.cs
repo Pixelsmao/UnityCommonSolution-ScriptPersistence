@@ -3,7 +3,7 @@ using System.Reflection;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     public static class MemberInfoExtensions
     {

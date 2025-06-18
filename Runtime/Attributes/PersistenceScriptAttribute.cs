@@ -1,6 +1,6 @@
 using System;
 
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class PersistenceScriptAttribute : Attribute

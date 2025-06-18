@@ -1,6 +1,6 @@
 using System;
 
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     /// <summary>
     /// 非持久化属性：被此属性标记的成员不会被持久化。

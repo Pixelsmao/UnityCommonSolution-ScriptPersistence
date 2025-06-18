@@ -4,7 +4,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     /// <summary>
     /// unity的一般运行顺序为：

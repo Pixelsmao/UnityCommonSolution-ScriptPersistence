@@ -1,7 +1,7 @@
 using System.Reflection;
 using UnityEngine;
 
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     public static class ICustomAttributeProviderExtensions
     {

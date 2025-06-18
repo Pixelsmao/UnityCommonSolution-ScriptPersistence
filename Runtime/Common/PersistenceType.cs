@@ -1,4 +1,4 @@
-namespace Pixelsmao.UnityCommonSolution.SimpleDataPersistence
+namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     public enum PersistenceFormat
     {
