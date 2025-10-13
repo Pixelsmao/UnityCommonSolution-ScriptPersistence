@@ -7,33 +7,50 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
     public static class MemberInfoExtensions
     {
-        public static bool IsValueMember(this MemberInfo member)
+        public static bool IsSupportedSerializableMember(this MemberInfo member)
         {
-            return member switch
+            var memberType = member switch
             {
-                FieldInfo fieldInfo => true,
-                PropertyInfo => true,
-                _ => false
+                FieldInfo fieldInfo => fieldInfo.FieldType,
+                PropertyInfo propertyInfo => propertyInfo.PropertyType,
+                _ => null
             };
+
+            if (memberType == null)return false;
+            return memberType.IsValueType || memberType == typeof(string);
         }
+
 
         public static bool TryGetValue(this MemberInfo member, Object script, out object value)
         {
             var defaultValue = member.DeclaringType.GetDefaultValue();
             try
             {
+                object rawValue;
                 switch (member)
                 {
                     case FieldInfo fieldInfo:
-                        value = fieldInfo.GetValue(script);
-                        return true;
+                        rawValue = fieldInfo.GetValue(script);
+                        break;
                     case PropertyInfo propertyInfo:
-                        value = propertyInfo.GetValue(script);
-                        return true;
+                        rawValue = propertyInfo.GetValue(script);
+                        break;
                     default:
                         value = defaultValue;
                         return false;
                 }
+
+                // 检查是否为枚举类型，如果是则转换为int
+                if (rawValue != null && rawValue.GetType().IsEnum)
+                {
+                    value = Convert.ToInt32(rawValue);
+                }
+                else
+                {
+                    value = rawValue;
+                }
+
+                return true;
             }
             catch (Exception)
             {
@@ -42,7 +59,8 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             }
         }
 
-        public static Type GetValueMemberType(this MemberInfo member)
+
+        public static Type GetFieldOrPropertyType(this MemberInfo member)
         {
             return member switch
             {
@@ -54,13 +72,13 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         public static bool ApplyValueTypeMember(this MemberInfo member, Object owner, string value)
         {
-            var convertedValue = Convert.ChangeType(value, member.GetValueMemberType());
+            var convertedValue = Convert.ChangeType(value, member.GetFieldOrPropertyType());
             return TryApplyMember(member, owner, convertedValue);
         }
 
         public static bool ApplyEnumValue(this MemberInfo member, Object owner, string value)
         {
-            return Enum.TryParse(member.GetValueMemberType(), value, out var enumValue) &&
+            return Enum.TryParse(member.GetFieldOrPropertyType(), value, out var enumValue) &&
                    TryApplyMember(member, owner, enumValue);
         }
 

@@ -43,7 +43,10 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 var persistenceMembers = GetPersistenceMembers();
                 for (var i = 0; i < validLines.Count; i++)
                 {
-                    persistenceMembers[i].ParseMemberValue(validLines[i]);
+                    if (!persistenceMembers[i].ParseMemberValue(validLines[i]))
+                    {
+                        Debug.LogWarning($"持久化脚本【{scriptObjectName}.{scriptName}】成员【{persistenceMembers[i].memberName}】值解析失败.");
+                    }
                 }
 
                 return true;
@@ -64,7 +67,8 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         private List<PersistenceMember> GetPersistenceMembers()
         {
             return (from memberInfo in scriptType.GetMembers(bindingFlags)
-                where (memberInfo.IsValueMember() && memberInfo.GetCustomAttribute<NonPersistenceAttribute>() == null)
+                where (memberInfo.IsSupportedSerializableMember() &&
+                       memberInfo.GetCustomAttribute<NonPersistenceAttribute>() == null)
                 select new PersistenceMember(script, memberInfo)).ToList();
         }
 

@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 {
@@ -15,7 +17,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
     /// 5. AfterSceneLoad (RuntimeInitializeOnLoadMethod)  
     /// 6. Start() (所有对象的 Start 被调用)
     /// 在AfterSceneLoad中的代码将在Awake之后执行，如果脚本的值在Awake中初始化，则保存和加载可能不会按照预期生效。
-    /// TODO 考虑使用PlayerLoop在Scene Deserialization之后Awake()之前插入代码进行执行，但是修改 Unity 底层循环逻辑需要谨慎。
+    /// TODO 考虑使用PlayerLoop在Scene Deserialization之后Awake()之前插入代码进行执行，谨慎修改 Unity 底层循环逻辑。
     /// </summary>
     public static class Persistence
     {
@@ -63,7 +65,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             {
                 var attribute = monoBehaviour.GetType().GetCustomAttribute<PersistenceScriptAttribute>();
                 if (attribute == null) continue;
-                if (attribute.useDefaultPersistenceFile)
+                if (attribute.persistenceFileName.Length == 0)
                 {
                     defaultPersistenceFile.AddPersistenceScript(new PersistenceScript(monoBehaviour));
                 }

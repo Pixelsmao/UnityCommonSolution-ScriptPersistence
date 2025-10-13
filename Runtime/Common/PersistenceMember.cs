@@ -23,10 +23,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             this.member = member;
             tooltip = member.GetTooltip();
             memberName = member.Name;
-            if (member.TryGetValue(owner, out var value))
-            {
-                memberValue = value;
-            }
+            if (member.TryGetValue(owner, out var value)) memberValue = value;
         }
 
         public bool ParseMemberValue(string memberContent)
@@ -62,7 +59,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         {
             try
             {
-                var type = member.GetValueMemberType();
+                var type = member.GetFieldOrPropertyType();
                 if (type.IsEnum) return member.ApplyEnumValue(owner, unparsedValue);
                 if (type == typeof(Vector2)) return member.ApplyVector2Member(owner, unparsedValue);
                 if (type == typeof(Vector3)) return member.ApplyVector3Member(owner, unparsedValue);
