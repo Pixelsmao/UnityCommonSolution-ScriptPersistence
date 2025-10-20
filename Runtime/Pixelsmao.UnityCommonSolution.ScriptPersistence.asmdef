@@ -1,12 +1,10 @@
 {
-    "name": "UnityCommonSolution.SimpleDataPersistence",
+    "name": "Pixelsmao.UnityCommonSolution.ScriptPersistence",
     "rootNamespace": "",
-    "references": [],
-    "includePlatforms": [
-        "Editor",
-        "WindowsStandalone32",
-        "WindowsStandalone64"
+    "references": [
+        "GUID:4c9eb1b5882c1644095bfb81d8f204cc"
     ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
