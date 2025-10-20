@@ -23,6 +23,9 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         private const uint WINDOW_NOT_CHANGE_SIZE = 0x0001;
 
 
+        /// <summary>
+        /// 应用程序目录：只能在Unity的生命周期方法中使用此属性，因为使用了Application.dataPath。
+        /// </summary>
         public static string applicationDirectory => Path.GetDirectoryName(Application.dataPath);
         public static string applicationPath => $"{applicationDirectory}\\{Application.productName}.exe";
 
