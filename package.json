@@ -18,5 +18,7 @@
     "type": "git",
     "url": "https://github.com/Pixelsmao/UnityCommonSolution-ScriptPersistence.git"
   },
-  "dependencies": {}
+  "dependencies": {
+    "com.pixelsmao.unitycommonsolution.unityextensions": "https://github.com/Pixelsmao/UnityCommonSolution-UnityExtensions.git"
+  }
 }
