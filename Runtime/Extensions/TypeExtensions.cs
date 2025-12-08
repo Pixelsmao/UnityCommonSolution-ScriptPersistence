@@ -35,7 +35,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 return Array.Empty<MemberInfo>();
 
             // 2. 存储去重后的成员
-            HashSet<MemberInfo> collectedMembers = new HashSet<MemberInfo>();
+            HashSet<MemberInfo> collectedMembers = new HashSet<MemberInfo>(new MemberInfoComparer());
             Type currentType = targetType;
 
             // 3. 遍历继承链：仅处理MonoBehaviour的派生类（遇到MonoBehaviour则停止）
@@ -49,7 +49,12 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 MemberInfo[] currentLayerMembers = currentType.GetMembers(bindingFlags);
                 foreach (var member in currentLayerMembers)
                 {
-                    collectedMembers.Add(member);
+                    // 确保成员来自当前类型而不是基类，避免包含MonoBehaviour的成员
+                    if (member.DeclaringType != typeof(MonoBehaviour) &&
+                        typeof(MonoBehaviour).IsAssignableFrom(member.DeclaringType))
+                    {
+                        collectedMembers.Add(member);
+                    }
                 }
 
                 // 切换到父类型（如：MyScript → MyBaseScript → MonoBehaviour）
@@ -58,6 +63,24 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
             // 4. 转换为数组返回
             return collectedMembers.ToArray();
+        }
+
+        /// <summary>
+        /// 自定义MemberInfo比较器，用于按名称和声明类型去重
+        /// </summary>
+        private class MemberInfoComparer : IEqualityComparer<MemberInfo>
+        {
+            public bool Equals(MemberInfo x, MemberInfo y)
+            {
+                if (x == null || y == null) return x == y;
+                return x.Name == y.Name && x.DeclaringType == y.DeclaringType;
+            }
+
+            public int GetHashCode(MemberInfo obj)
+            {
+                if (obj == null) return 0;
+                return (obj.DeclaringType?.GetHashCode() != null ? obj.DeclaringType.GetHashCode() : 0) ^ obj.Name.GetHashCode();
+            }
         }
     }
 }
