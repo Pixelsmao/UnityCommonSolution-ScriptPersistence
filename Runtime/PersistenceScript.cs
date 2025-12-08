@@ -17,7 +17,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         internal string headerName => $"{scriptObjectName}.{scriptName}";
 
         public BindingFlags bindingFlags { get; } =
-            BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            BindingFlags.Public | BindingFlags.Instance;
 
         public PersistenceFormat format { get; set; } = PersistenceFormat.Text;
 
@@ -66,7 +66,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         private List<PersistenceMember> GetPersistenceMembers()
         {
-            return (from memberInfo in scriptType.GetMembers(bindingFlags)
+            return (from memberInfo in scriptType.GetMonoBehaviourDerivedMembers(bindingFlags)
                 where (memberInfo.IsSupportedSerializableMember() &&
                        memberInfo.GetCustomAttribute<NonPersistenceAttribute>() == null)
                 select new PersistenceMember(script, memberInfo)).ToList();
