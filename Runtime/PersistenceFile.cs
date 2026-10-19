@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -34,85 +35,91 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         public void SavePersistenceFile()
         {
+            Directory.CreateDirectory(GetSaveDirectory());
             File.WriteAllText(file.FullName, ToString());
         }
 
         public void LoadPersistenceFile()
         {
-            switch (format)
-            {
-                case PersistenceFormat.Unknown:
-                    break;
-                case PersistenceFormat.Text:
-                    var contentLines = File.ReadAllLines(file.FullName);
-                    //将持久化脚本的标题索引位置加入索引列表
-                    var scriptSegmentIndexes = contentLines.Select((_, i) => i)
-                        .Where(index => IsTextHeader(contentLines[index])).ToList();
-                    //添加脚本分段的结束索引
-                    scriptSegmentIndexes.Add(contentLines.Length);
-                    //为每一个脚本分段创建一个ScriptSegment
-                    //填写脚本分段的标题、起始位置、结束位置
-                    var scriptSegments = new List<ScriptSegment>();
-                    for (var i = 0; i < scriptSegmentIndexes.Count - 1; i++)
-                    {
-                        var segment = new ScriptSegment(contentLines[scriptSegmentIndexes[i]],
-                            scriptSegmentIndexes[i], scriptSegmentIndexes[i + 1]);
-                        scriptSegments.Add(segment);
-                    }
-
-                    //将脚本分段依次应用于脚本
-                    for (var i = 0; i < scripts.Count; i++)
-                    {
-                        if (i >= scriptSegments.Count)
-                        {
-                            Debug.LogWarning($"脚本{scripts[i].headerName} 缺少持久化脚本分段！");
-                            continue;
-                        }
-
-                        var segment = scriptSegments[i];
-                        if (!scripts[i].ScriptHeaderEquals(segment.segmentName))
-                        {
-                            Debug.LogWarning(
-                                $"脚本【{scripts[i].headerName}】与对应的持久化脚本名称【{segment.segmentName.Trim('[', ']')}】不匹配," +
-                                $"会继续应用对应位置的值，但可能应用为错误的值。");
-                        }
-
-                        scripts[i].TryApply(contentLines.Skip(segment.startIndex)
-                            .Take(segment.rowCount).ToList());
-                    }
-
-                    break;
-                case PersistenceFormat.Json:
-                    break;
-                case PersistenceFormat.Xml:
-                    break;
-                case PersistenceFormat.Excel:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private static bool IsTextHeader(string line)
-        {
-            return !line.Contains("<") && !line.Contains(">") && line.Contains("[") && line.Contains("]");
+            LoadPersistenceFileInternal();
         }
 
         public void SaveOrLoadPersistenceFile()
         {
-            if (!file.Exists) SavePersistenceFile();
-            else LoadPersistenceFile();
+            if (!file.Exists)
+            {
+                SavePersistenceFile();
+                return;
+            }
+
+            if (!LoadPersistenceFileInternal()) return;
+            MoveFileToBackups();
+            SavePersistenceFile();
         }
 
         public void AddPersistenceScript(PersistenceScript persistenceScript)
         {
-            //if (ContainsScript(persistenceScript)) return;
             scripts.Add(persistenceScript);
         }
 
         public bool ContainsScript(object script)
         {
             return scripts.Any(persistenceScript => ReferenceEquals(persistenceScript, script));
+        }
+
+        private bool LoadPersistenceFileInternal()
+        {
+            if (format != PersistenceFormat.Text)
+            {
+                Debug.LogWarning($"持久化文件【{file.Name}】当前仅支持 Text 格式。");
+                return false;
+            }
+
+            if (scripts.Count != 1)
+            {
+                Debug.LogWarning($"持久化文件【{file.Name}】必须只包含一个持久化脚本。");
+                return true;
+            }
+
+            var contentLines = File.ReadAllLines(file.FullName).ToList();
+            var headers = contentLines.Where(IsTextHeader).ToList();
+            var requiresSynchronization = headers.Count != 1;
+            if (headers.Count == 1 && !scripts[0].ScriptHeaderEquals(headers[0]))
+            {
+                requiresSynchronization = true;
+                Debug.LogWarning($"持久化文件【{file.Name}】的脚本标题与当前脚本不匹配，将同步为当前配置。");
+            }
+
+            if (!scripts[0].TryApply(contentLines, out var requiresMemberSynchronization))
+            {
+                requiresSynchronization = true;
+            }
+
+            return requiresSynchronization || requiresMemberSynchronization;
+        }
+
+        private void MoveFileToBackups()
+        {
+            var backupDirectory = Path.Combine(GetSaveDirectory(), "Backups");
+            Directory.CreateDirectory(backupDirectory);
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
+            var baseName = Path.GetFileNameWithoutExtension(file.Name);
+            var extension = file.Extension;
+            var backupPath = Path.Combine(backupDirectory, $"{baseName}_{timestamp}{extension}");
+            var duplicateIndex = 1;
+            while (File.Exists(backupPath))
+            {
+                backupPath = Path.Combine(backupDirectory, $"{baseName}_{timestamp}_{duplicateIndex}{extension}");
+                duplicateIndex++;
+            }
+
+            File.Move(file.FullName, backupPath);
+        }
+
+        private static bool IsTextHeader(string line)
+        {
+            return !line.Contains("<") && !line.Contains(">") && line.Contains("[") && line.Contains("]");
         }
 
         private string GetSaveExtensionName()
@@ -130,15 +137,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         private string GetSaveDirectory()
         {
-            return format switch
-            {
-                PersistenceFormat.Unknown => saveDirectory == string.Empty ? defaultSaveDirectory : saveDirectory,
-                PersistenceFormat.Text => saveDirectory == string.Empty ? defaultSaveDirectory : saveDirectory,
-                PersistenceFormat.Json => saveDirectory == string.Empty ? defaultSaveDirectory : saveDirectory,
-                PersistenceFormat.Xml => saveDirectory == string.Empty ? defaultSaveDirectory : saveDirectory,
-                PersistenceFormat.Excel => saveDirectory == string.Empty ? defaultSaveDirectory : saveDirectory,
-                _ => throw new ArgumentOutOfRangeException()
-            };
+            return saveDirectory == string.Empty ? defaultSaveDirectory : saveDirectory;
         }
 
         public override string ToString()
@@ -151,22 +150,6 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             }
 
             return builder.ToString();
-        }
-
-        internal class ScriptSegment
-        {
-            public string segmentName { get; }
-            public int startIndex { get; }
-            public int endIndex { get; }
-
-            public int rowCount => endIndex - startIndex;
-
-            public ScriptSegment(string segmentName, int startIndex, int endIndex)
-            {
-                this.segmentName = segmentName;
-                this.startIndex = startIndex;
-                this.endIndex = endIndex;
-            }
         }
     }
 }

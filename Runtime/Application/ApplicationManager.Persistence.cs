@@ -21,6 +21,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         [Tooltip("收集运行时日志")] public bool collectRuntimeLogs = true;
         [Tooltip("创建桌面快捷方式")] public bool shortcutToDesktop = true;
         [Tooltip("创建启动快捷方式")] public bool shortcutToStartup = true;
+        [Tooltip("创建启动快捷方式(公共)")] public bool shortcutToStartupCommon = true;
 
         private void ApplyApplicationSettings()
         {

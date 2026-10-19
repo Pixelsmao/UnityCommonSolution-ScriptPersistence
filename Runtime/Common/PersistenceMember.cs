@@ -19,40 +19,48 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         public PersistenceMember(Object owner, MemberInfo member)
         {
             this.owner = owner;
-            this.ownerName = owner.name;
+            ownerName = owner.name;
             this.member = member;
             tooltip = member.GetTooltip();
             memberName = member.Name;
             if (member.TryGetValue(owner, out var value)) memberValue = value;
         }
 
+        internal static bool TryGetTextMemberName(string memberContent, out string memberName)
+        {
+            memberName = string.Empty;
+            if (string.IsNullOrEmpty(memberContent)) return false;
+
+            var keyValuePair = Regex.Replace(Regex.Replace(memberContent, @"\s+", string.Empty), @"<[^>]*>", string.Empty);
+            var separatorIndex = keyValuePair.IndexOf('=');
+            if (separatorIndex <= 0) return false;
+
+            memberName = keyValuePair.Substring(0, separatorIndex);
+            return memberName.Length > 0;
+        }
+
         public bool ParseMemberValue(string memberContent)
         {
-            //去除成员内容中的空白字符
-            memberContent = Regex.Replace(memberContent, @"\s+", "");
+            memberContent = Regex.Replace(memberContent, @"\s+", string.Empty);
             switch (memberContent.GetPersistenceFormat())
             {
                 case PersistenceFormat.Unknown:
                     Debug.LogWarning($"【{memberContent}】 不是一个有效的成员内容.");
-
                     return false;
                 case PersistenceFormat.Text:
-                    // 剔除注释
-                    var keyValuePair = Regex.Replace(memberContent, @"<[^>]*>", "");
-                    var key = keyValuePair.Split("=")[0];
-                    var unparsedValue = keyValuePair.Split("=")[1];
+                    var keyValuePair = Regex.Replace(memberContent, @"<[^>]*>", string.Empty);
+                    var separatorIndex = keyValuePair.IndexOf('=');
+                    if (separatorIndex <= 0) return false;
+                    var key = keyValuePair.Substring(0, separatorIndex);
+                    var unparsedValue = keyValuePair.Substring(separatorIndex + 1);
                     return comparer.Equals(key, memberName) && TryApplyMember(unparsedValue);
                 case PersistenceFormat.Json:
-                    break;
                 case PersistenceFormat.Xml:
-                    break;
                 case PersistenceFormat.Excel:
-                    break;
+                    return false;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
-            return false;
         }
 
         private bool TryApplyMember(string unparsedValue)
@@ -79,7 +87,6 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             }
         }
 
-
         public override string ToString()
         {
             return ToString(PersistenceFormat.Text);
@@ -93,9 +100,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                     var tooltipText = tooltip == string.Empty ? string.Empty : $"<{tooltip}>";
                     return $"{tooltipText}{memberName}={memberValue}";
                 case PersistenceFormat.Json:
-                    throw new NotImplementedException();
                 case PersistenceFormat.Xml:
-                    throw new NotImplementedException();
                 case PersistenceFormat.Excel:
                     throw new NotImplementedException();
                 default:
