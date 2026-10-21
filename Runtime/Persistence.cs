@@ -14,18 +14,28 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         private static readonly HashSet<int> initializedSceneHandles = new HashSet<int>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void RegisterSceneCallbacks()
+        private static void InitializeStartupScenes()
         {
             initializedSceneHandles.Clear();
+
+            // The initial scene hierarchy is available here, before scene objects run Awake.
+            for (var i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.IsValid() || !scene.isLoaded) continue;
+                InitializeScene(scene);
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void RegisterPostInitializationCallbacks()
+        {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-        }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void RuntimeInitializeOnLoadMethod()
-        {
+            // Compatibility fallback for any scene not initialized by BeforeSceneLoad/bootstrap.
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
