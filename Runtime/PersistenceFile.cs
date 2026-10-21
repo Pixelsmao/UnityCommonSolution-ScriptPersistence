@@ -100,12 +100,17 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         private void MoveFileToBackups()
         {
-            var backupDirectory = Path.Combine(GetSaveDirectory(), "Backups");
+            MoveFileToBackups(file, GetSaveDirectory());
+        }
+
+        internal static void MoveFileToBackups(FileInfo sourceFile, string saveDirectory)
+        {
+            var backupDirectory = Path.Combine(saveDirectory, "Backups");
             Directory.CreateDirectory(backupDirectory);
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
-            var baseName = Path.GetFileNameWithoutExtension(file.Name);
-            var extension = file.Extension;
+            var baseName = Path.GetFileNameWithoutExtension(sourceFile.Name);
+            var extension = sourceFile.Extension;
             var backupPath = Path.Combine(backupDirectory, $"{baseName}_{timestamp}{extension}");
             var duplicateIndex = 1;
             while (File.Exists(backupPath))
@@ -114,7 +119,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 duplicateIndex++;
             }
 
-            File.Move(file.FullName, backupPath);
+            File.Move(sourceFile.FullName, backupPath);
         }
 
         private static bool IsTextHeader(string line)

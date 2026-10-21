@@ -16,6 +16,9 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         internal string scriptName => scriptType.Name;
         internal string scriptObjectName => script.name;
         internal string headerName => $"{scriptObjectName}.{scriptName}";
+        internal string persistenceDirectoryName => script is Component component
+            ? GetSceneDirectoryName(component.gameObject.scene)
+            : "Unnamed";
         internal string persistenceFileName => GetPersistenceFileName();
 
         public BindingFlags bindingFlags { get; } = BindingFlags.Public | BindingFlags.Instance;
@@ -129,7 +132,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 return $"Unnamed_{SanitizeFileNameSegment(scriptName)}";
             }
 
-            var hierarchySegments = new List<string> { GetSceneScope(component) };
+            var hierarchySegments = new List<string>();
             var transforms = new Stack<Transform>();
             for (var current = component.transform; current != null; current = current.parent)
             {
@@ -145,9 +148,9 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             return string.Join("_", hierarchySegments);
         }
 
-        private static string GetSceneScope(Component component)
+        internal static string GetSceneDirectoryName(UnityEngine.SceneManagement.Scene scene)
         {
-            var sceneName = component.gameObject.scene.name;
+            var sceneName = scene.name;
             return string.IsNullOrWhiteSpace(sceneName) ? "DontDestroyOnLoad" : SanitizeFileNameSegment(sceneName);
         }
 
