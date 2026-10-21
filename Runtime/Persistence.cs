@@ -16,6 +16,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InitializeStartupScenes()
         {
+            Debug.Log("InitializeStartupScenes");
             initializedSceneHandles.Clear();
 
             // The initial scene hierarchy is available here, before scene objects run Awake.
@@ -30,6 +31,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void RegisterPostInitializationCallbacks()
         {
+            Debug.Log("RegisterPostInitializationCallbacks");
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
@@ -44,8 +46,10 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
                 if (HasPersistenceScripts(scene))
                 {
-                    Debug.LogWarning($"场景【{scene.name}】未在 Awake 前完成持久化初始化。请确保场景中有已激活的 PersistenceSceneBootstrap 并保存场景；当前配置将在 Awake 之后加载。");
+                    Debug.LogWarning(
+                        $"场景【{scene.name}】未在 Awake 前完成持久化初始化。请确保场景中有已激活的 PersistenceSceneBootstrap 并保存场景；当前配置将在 Awake 之后加载。");
                 }
+
                 InitializeScene(scene);
             }
 
@@ -58,8 +62,10 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
             if (HasPersistenceScripts(scene))
             {
-                Debug.LogWarning($"场景【{scene.name}】未在 Awake 前完成持久化初始化。请确保场景中有已激活的 PersistenceSceneBootstrap 并保存场景；当前配置将在 Awake 之后加载。");
+                Debug.LogWarning(
+                    $"场景【{scene.name}】未在 Awake 前完成持久化初始化。请确保场景中有已激活的 PersistenceSceneBootstrap 并保存场景；当前配置将在 Awake 之后加载。");
             }
+
             InitializeScene(scene);
         }
 
@@ -74,7 +80,8 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             {
                 foreach (var behaviour in root.GetComponentsInChildren<MonoBehaviour>(true))
                 {
-                    if (behaviour != null && behaviour.GetType().GetCustomAttribute<PersistenceScriptAttribute>() != null)
+                    if (behaviour != null &&
+                        behaviour.GetType().GetCustomAttribute<PersistenceScriptAttribute>() != null)
                     {
                         return true;
                     }
@@ -86,10 +93,11 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         internal static void InitializeScene(Scene scene)
         {
-            if (!scene.IsValid() || !scene.isLoaded || initializedSceneHandles.Contains(scene.handle)) return;
+            if (!scene.IsValid() || initializedSceneHandles.Contains(scene.handle)) return;
 
             var directoryName = PersistenceScript.GetSceneDirectoryName(scene);
             var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            Debug.Log("InitializeScene" + scene.name);
             ScanSceneObjects(scene, expectedFiles, true);
 
             // Same-named scenes share a directory, so preserve files for other loaded instances.
