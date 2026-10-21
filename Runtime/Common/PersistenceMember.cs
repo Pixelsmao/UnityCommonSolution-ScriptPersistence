@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -68,6 +70,13 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             try
             {
                 var type = member.GetFieldOrPropertyType();
+                var listElementType = type.GetListElementType();
+                if (listElementType != null)
+                {
+                    if (!listElementType.IsSupportedListElementType()) return false;
+                    return member.ApplyListMember(owner, unparsedValue);
+                }
+
                 if (type.IsEnum) return member.ApplyEnumValue(owner, unparsedValue);
                 if (type == typeof(Vector2)) return member.ApplyVector2Member(owner, unparsedValue);
                 if (type == typeof(Vector3)) return member.ApplyVector3Member(owner, unparsedValue);
@@ -94,11 +103,33 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         public string ToString(PersistenceFormat format)
         {
+            if (!TryFormat(format, out var content)) return string.Empty;
+            return content;
+        }
+
+        internal bool TryFormat(PersistenceFormat format, out string content)
+        {
+            content = string.Empty;
             switch (format)
             {
                 case PersistenceFormat.Text:
                     var tooltipText = tooltip == string.Empty ? string.Empty : $"<{tooltip}>";
-                    return $"{tooltipText}{memberName}={memberValue}";
+                    var elementType = member.GetFieldOrPropertyType().GetListElementType();
+                    if (elementType == null)
+                    {
+                        content = $"{tooltipText}{memberName}={memberValue}";
+                        return true;
+                    }
+
+                    if (!elementType.IsSupportedListElementType())
+                    {
+                        Debug.LogWarning($"持久化成员【{ownerName}.{memberName}】的列表元素类型【{elementType.FullName}】不受支持，已跳过该字段。");
+                        return false;
+                    }
+
+                    if (!TryFormatListValue(elementType, out var listValue)) return false;
+                    content = $"{tooltipText}{memberName}={listValue}";
+                    return true;
                 case PersistenceFormat.Json:
                 case PersistenceFormat.Xml:
                 case PersistenceFormat.Excel:
@@ -106,6 +137,42 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format), format, null);
             }
+        }
+
+        private bool TryFormatListValue(Type elementType, out string listValue)
+        {
+            listValue = string.Empty;
+            if (memberValue == null)
+            {
+                listValue = "[]";
+                return true;
+            }
+
+            if (!(memberValue is IList values)) return false;
+            if (elementType == typeof(string) && values.Count == 1 && string.IsNullOrWhiteSpace(values[0] as string))
+            {
+                Debug.LogWarning($"持久化成员【{ownerName}.{memberName}】仅包含一个空字符串，无法与空列表区分，已跳过该字段。");
+                return false;
+            }
+
+            var serializedValues = new List<string>(values.Count);
+            foreach (var value in values)
+            {
+                if (value == null && elementType != typeof(string)) return false;
+
+                var serializedValue = value == null ? string.Empty : value.ToString();
+
+                if (serializedValue.Contains("|"))
+                {
+                    Debug.LogWarning($"持久化成员【{ownerName}.{memberName}】的列表元素包含分隔符【|】，无法无损保存，已跳过该字段。");
+                    return false;
+                }
+
+                serializedValues.Add(serializedValue);
+            }
+
+            listValue = $"[{string.Join("|", serializedValues)}]";
+            return true;
         }
     }
 }

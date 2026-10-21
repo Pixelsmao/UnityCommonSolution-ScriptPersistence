@@ -43,8 +43,17 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             try
             {
                 var membersByName = new Dictionary<string, PersistenceMember>(StringComparer.Ordinal);
+                var unsupportedListMemberNames = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var persistenceMember in GetPersistenceMembers())
                 {
+                    var elementType = persistenceMember.member.GetFieldOrPropertyType().GetListElementType();
+                    if (elementType != null && !elementType.IsSupportedListElementType())
+                    {
+                        unsupportedListMemberNames.Add(persistenceMember.memberName);
+                        Debug.LogWarning($"持久化脚本【{headerName}】成员【{persistenceMember.memberName}】的列表元素类型【{elementType.FullName}】不受支持，配置文件中没有对应字段，保留当前值。");
+                        continue;
+                    }
+
                     if (membersByName.ContainsKey(persistenceMember.memberName))
                     {
                         requiresSynchronization = true;
@@ -60,6 +69,12 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                     if (!PersistenceMember.TryGetTextMemberName(line, out var memberName))
                     {
                         requiresSynchronization = true;
+                        continue;
+                    }
+
+                    if (unsupportedListMemberNames.Contains(memberName))
+                    {
+                        Debug.LogWarning($"持久化脚本【{headerName}】旧配置包含不受支持的列表成员【{memberName}】，将忽略该值并保留当前值。");
                         continue;
                     }
 
@@ -84,6 +99,10 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
                 foreach (var memberName in membersByName.Keys)
                 {
                     if (appliedMemberNames.Contains(memberName)) continue;
+                    var missingMember = membersByName[memberName];
+                    if (missingMember.member.GetFieldOrPropertyType().GetListElementType() != null &&
+                        !missingMember.TryFormat(PersistenceFormat.Text, out _)) continue;
+
                     requiresSynchronization = true;
                     Debug.LogWarning($"持久化脚本【{headerName}】缺少成员【{memberName}】配置，将使用当前默认值。");
                 }
@@ -197,7 +216,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             builder.AppendLine($"[{headerName}]");
             foreach (var member in GetPersistenceMembers())
             {
-                builder.AppendLine(member.ToString(format));
+                if (member.TryFormat(format, out var memberContent)) builder.AppendLine(memberContent);
             }
 
             return builder.ToString();
