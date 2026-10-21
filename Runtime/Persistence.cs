@@ -16,7 +16,6 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InitializeStartupScenes()
         {
-            Debug.Log("InitializeStartupScenes");
             initializedSceneHandles.Clear();
 
             // The initial scene hierarchy is available here, before scene objects run Awake.
@@ -31,7 +30,6 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void RegisterPostInitializationCallbacks()
         {
-            Debug.Log("RegisterPostInitializationCallbacks");
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
@@ -97,7 +95,6 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
             var directoryName = PersistenceScript.GetSceneDirectoryName(scene);
             var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            Debug.Log("InitializeScene" + scene.name);
             ScanSceneObjects(scene, expectedFiles, true);
 
             // Same-named scenes share a directory, so preserve files for other loaded instances.
@@ -112,6 +109,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             }
 
             ReconcileSceneDirectory(directoryName, expectedFiles);
+            Debug.Log($"脚本持久化：场景【{scene.name}】中持久化脚本已经全部初始化完成！");
             initializedSceneHandles.Add(scene.handle);
         }
 
