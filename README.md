@@ -9,6 +9,7 @@ Unity 运行时脚本字段持久化包。为 `MonoBehaviour` 添加 `[Persisten
 ## 功能
 
 - 按场景保存配置；`DontDestroyOnLoad` 对象使用独立目录。
+- 每个含 `[PersistenceScript]` 脚本的场景使用一个 `PersistenceSceneBootstrap`，在普通脚本的 `Awake` 前加载配置；编辑器会自动补齐缺失组件。
 - 支持常用基础值类型、枚举、字符串、Unity 向量/颜色类型，以及相应的 `List<T>`。
 - 使用 `[NonPersistence]` 排除不需要保存的字段或属性。
 - 场景扫描后自动将不再对应持久化脚本的配置归档到场景目录下的 `Backups`。
@@ -36,7 +37,7 @@ https://github.com/Pixelsmao/UnityCommonSolution-ScriptPersistence.git
 
 ## 快速开始
 
-将以下脚本挂到场景中的 GameObject 上。场景加载后，包会自动加载已有配置；配置不存在时，会用脚本当前值创建配置。
+将以下脚本挂到场景中的 GameObject 上。打开包含此脚本的场景时，编辑器会自动在场景根层级添加 `PersistenceSceneBootstrap`。保存场景后，运行时会在普通脚本的 `Awake` 前加载已有配置；配置不存在时，会用脚本当前值创建配置。
 
 ```csharp
 using System.Collections.Generic;
@@ -54,6 +55,12 @@ public class PlayerSettings : MonoBehaviour
     public int runtimeCounter;
 }
 ```
+
+每个包含 `[PersistenceScript]` 组件的场景需要一个引导组件即可。编辑器在打开场景、添加持久化脚本或脚本重新编译后检查并补齐；自动添加会使场景变为未保存状态，需保存场景才能带入运行时。运行时动态加载的场景也必须在场景文件中包含引导组件。
+
+引导组件只扫描场景初始化时已存在的对象；场景加载后才动态创建的对象不会自动加载配置。
+
+引导组件默认早于普通脚本执行。如果项目中的脚本显式设置了与引导组件相同或更早的 Script Execution Order，它们可能先于引导组件运行；请协调执行顺序，或不要在这些脚本的 `Awake` 中读取持久化字段。
 
 ## 支持的数据
 

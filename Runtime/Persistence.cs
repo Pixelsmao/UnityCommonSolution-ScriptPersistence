@@ -11,32 +11,32 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
     public static class Persistence
     {
         private static string configDirectory => Path.Combine(ApplicationUtility.applicationDirectory, "Config");
+        private static readonly HashSet<int> initializedSceneHandles = new HashSet<int>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RegisterSceneCallbacks()
+        {
+            initializedSceneHandles.Clear();
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void RuntimeInitializeOnLoadMethod()
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneManager.sceneLoaded += OnSceneLoaded;
-
-            var expectedFilesByDirectory = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.IsValid() || !scene.isLoaded) continue;
+                if (initializedSceneHandles.Contains(scene.handle)) continue;
 
-                var directoryName = PersistenceScript.GetSceneDirectoryName(scene);
-                if (!expectedFilesByDirectory.TryGetValue(directoryName, out var expectedFiles))
+                if (HasPersistenceScripts(scene))
                 {
-                    expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    expectedFilesByDirectory.Add(directoryName, expectedFiles);
+                    Debug.LogWarning($"场景【{scene.name}】未在 Awake 前完成持久化初始化。请确保场景中有已激活的 PersistenceSceneBootstrap 并保存场景；当前配置将在 Awake 之后加载。");
                 }
-
-                ScanSceneObjects(scene, expectedFiles, true);
-            }
-
-            foreach (var directoryEntry in expectedFilesByDirectory)
-            {
-                ReconcileSceneDirectory(directoryEntry.Key, directoryEntry.Value);
+                InitializeScene(scene);
             }
 
             ScanDontDestroyOnLoadObjects();
@@ -44,7 +44,39 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (!scene.IsValid() || !scene.isLoaded) return;
+            if (!scene.IsValid() || !scene.isLoaded || initializedSceneHandles.Contains(scene.handle)) return;
+
+            if (HasPersistenceScripts(scene))
+            {
+                Debug.LogWarning($"场景【{scene.name}】未在 Awake 前完成持久化初始化。请确保场景中有已激活的 PersistenceSceneBootstrap 并保存场景；当前配置将在 Awake 之后加载。");
+            }
+            InitializeScene(scene);
+        }
+
+        private static void OnSceneUnloaded(Scene scene)
+        {
+            initializedSceneHandles.Remove(scene.handle);
+        }
+
+        private static bool HasPersistenceScripts(Scene scene)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var behaviour in root.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (behaviour != null && behaviour.GetType().GetCustomAttribute<PersistenceScriptAttribute>() != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        internal static void InitializeScene(Scene scene)
+        {
+            if (!scene.IsValid() || !scene.isLoaded || initializedSceneHandles.Contains(scene.handle)) return;
 
             var directoryName = PersistenceScript.GetSceneDirectoryName(scene);
             var expectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -62,6 +94,7 @@ namespace Pixelsmao.UnityCommonSolution.ScriptPersistence
             }
 
             ReconcileSceneDirectory(directoryName, expectedFiles);
+            initializedSceneHandles.Add(scene.handle);
         }
 
         private static void ScanSceneObjects(Scene scene, HashSet<string> expectedFiles, bool saveOrLoad)

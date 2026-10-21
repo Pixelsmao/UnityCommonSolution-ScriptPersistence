@@ -1,6 +1,6 @@
 {
   "name": "com.pixelsmao.unitycommonsolution.scriptpersistence",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "displayName": "Pixelsmao.UnityCommonSolution.ScriptPersistence",
   "description": "在Unity中通过反射的方法对场景中的脚本进行数据持久化，保存和加载脚本中的可序列化成员。",
   "unity": "2021.3",
